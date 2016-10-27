@@ -143,7 +143,8 @@ export default function enhance (ComposedComponent) {
       const title = getRatingTooltip(metricKey, measure.value);
 
       return (
-          <div className="overview-domain-measure-sup"
+          <div className="display-inline-block text-top big-spacer-right"
+               style={{ paddingTop: 8 }}
                title={title}
                data-toggle="tooltip">
             <DrilldownLink className="link-no-underline" component={component.key} metric={metricKey}>

@@ -87,10 +87,10 @@ class BugsAndVulnerabilities extends React.Component {
           <div className="overview-domain-measures">
 
             <div className="overview-domain-measure">
-              <div className="display-inline-block text-middle" style={{ paddingLeft: 56 }}>
+              {this.props.renderRating('reliability_rating')}
+              <div className="display-inline-block text-middle">
                 <div className="overview-domain-measure-value">
                   {this.props.renderIssues('bugs', 'BUG')}
-                  {this.props.renderRating('reliability_rating')}
                 </div>
                 <div className="overview-domain-measure-label">
                   {getMetricName('bugs')}
@@ -99,10 +99,10 @@ class BugsAndVulnerabilities extends React.Component {
             </div>
 
             <div className="overview-domain-measure">
+              {this.props.renderRating('security_rating')}
               <div className="display-inline-block text-middle">
                 <div className="overview-domain-measure-value">
                   {this.props.renderIssues('vulnerabilities', 'VULNERABILITY')}
-                  {this.props.renderRating('security_rating')}
                 </div>
                 <div className="overview-domain-measure-label">
                   {getMetricName('vulnerabilities')}

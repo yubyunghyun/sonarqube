@@ -24,6 +24,7 @@ import { DrilldownLink } from '../../../components/shared/drilldown-link';
 import { getMetricName } from '../helpers/metrics';
 import { formatMeasure, getPeriodValue } from '../../../helpers/measures';
 import { translate } from '../../../helpers/l10n';
+import CoverageRating from '../../../components/ui/CoverageRating';
 
 class Coverage extends React.Component {
   getCoverageMetricPrefix () {
@@ -79,11 +80,11 @@ class Coverage extends React.Component {
   }
 
   renderCoverageDonut (coverage) {
-    const data = [
-      { value: coverage, fill: '#85bb43' },
-      { value: 100 - coverage, fill: '#d4333f' }
-    ];
-    return this.props.renderDonut(data);
+    return (
+        <div className="display-inline-block text-top big-spacer-right" style={{ paddingTop: 8 }}>
+          <CoverageRating value={coverage} size={40}/>
+        </div>
+    );
   }
 
   renderCoverage (coverageMetricPrefix) {

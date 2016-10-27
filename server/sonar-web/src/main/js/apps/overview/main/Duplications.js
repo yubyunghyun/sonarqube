@@ -23,6 +23,7 @@ import { DrilldownLink } from '../../../components/shared/drilldown-link';
 import { getMetricName } from '../helpers/metrics';
 import { formatMeasure, getPeriodValue } from '../../../helpers/measures';
 import { translate } from '../../../helpers/l10n';
+import DuplicationsRating from '../../../components/ui/DuplicationsRating';
 
 class Duplications extends React.Component {
   renderHeader () {
@@ -40,11 +41,11 @@ class Duplications extends React.Component {
   }
 
   renderDuplicationsDonut (duplications) {
-    const data = [
-      { value: duplications, fill: '#f3ca8e' },
-      { value: Math.max(0, 20 - duplications), fill: '#e6e6e6' }
-    ];
-    return this.props.renderDonut(data);
+    return (
+        <div className="display-inline-block text-top big-spacer-right" style={{ paddingTop: 8 }}>
+          <DuplicationsRating value={duplications} size={40}/>
+        </div>
+    );
   }
 
   renderDuplications () {

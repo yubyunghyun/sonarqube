@@ -112,11 +112,11 @@ class CodeSmells extends React.Component {
           <div className="overview-domain-measures">
 
             <div className="overview-domain-measure">
-              <div className="display-inline-block text-middle"
-                   style={{ paddingLeft: 56 }}>
+              {this.props.renderRating('sqale_rating')}
+
+              <div className="display-inline-block text-middle">
                 <div className="overview-domain-measure-value">
                   {this.renderDebt('sqale_index', 'CODE_SMELL')}
-                  {this.props.renderRating('sqale_rating')}
                 </div>
                 <div className="overview-domain-measure-label">
                   {getMetricName('effort')}
