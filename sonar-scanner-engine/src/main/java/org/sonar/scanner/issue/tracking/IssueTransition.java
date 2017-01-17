@@ -20,15 +20,16 @@
 package org.sonar.scanner.issue.tracking;
 
 import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.resources.Project;
+import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.core.util.CloseableIterator;
-import org.sonar.scanner.index.BatchComponent;
-import org.sonar.scanner.index.BatchComponentCache;
+import org.sonar.scanner.ProjectAnalysisInfo;
 import org.sonar.scanner.issue.IssueCache;
 import org.sonar.scanner.issue.IssueTransformer;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.protocol.output.ScannerReportReader;
 import org.sonar.scanner.report.ReportPublisher;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 import org.sonar.scanner.util.ProgressReport;
 import javax.annotation.Nullable;
 
@@ -41,23 +42,23 @@ import java.util.concurrent.TimeUnit;
 @ScannerSide
 public class IssueTransition {
   private final IssueCache issueCache;
-  private final BatchComponentCache componentCache;
+  private final InputComponentStore inputComponentCache;
   private final ReportPublisher reportPublisher;
   private final Date analysisDate;
   @Nullable
   private final LocalIssueTracking localIssueTracking;
 
-  public IssueTransition(BatchComponentCache componentCache, IssueCache issueCache, ReportPublisher reportPublisher,
+  public IssueTransition(InputComponentStore inputComponentCache, ProjectAnalysisInfo projectAnalysisInfo, IssueCache issueCache, ReportPublisher reportPublisher,
     @Nullable LocalIssueTracking localIssueTracking) {
-    this.componentCache = componentCache;
+    this.inputComponentCache = inputComponentCache;
     this.issueCache = issueCache;
     this.reportPublisher = reportPublisher;
     this.localIssueTracking = localIssueTracking;
-    this.analysisDate = ((Project) componentCache.getRoot().resource()).getAnalysisDate();
+    this.analysisDate = projectAnalysisInfo.analysisDate();
   }
 
-  public IssueTransition(BatchComponentCache componentCache, IssueCache issueCache, ReportPublisher reportPublisher) {
-    this(componentCache, issueCache, reportPublisher, null);
+  public IssueTransition(InputComponentStore inputComponentCache, ProjectAnalysisInfo projectAnalysisInfo, IssueCache issueCache, ReportPublisher reportPublisher) {
+    this(inputComponentCache, projectAnalysisInfo, issueCache, reportPublisher, null);
   }
 
   public void execute() {
@@ -66,7 +67,7 @@ public class IssueTransition {
     }
 
     ScannerReportReader reader = new ScannerReportReader(reportPublisher.getReportDir());
-    int nbComponents = componentCache.all().size();
+    int nbComponents = inputComponentCache.all().size();
 
     if (nbComponents == 0) {
       return;
@@ -77,8 +78,8 @@ public class IssueTransition {
     int count = 0;
 
     try {
-      for (BatchComponent component : componentCache.all()) {
-        trackIssues(reader, component);
+      for (InputComponent component : inputComponentCache.all()) {
+        trackIssues(reader, (DefaultInputModule) component);
         count++;
         progressReport.message(count + "/" + nbComponents + " components tracked");
       }
@@ -87,22 +88,22 @@ public class IssueTransition {
     }
   }
 
-  public void trackIssues(ScannerReportReader reader, BatchComponent component) {
+  public void trackIssues(ScannerReportReader reader, DefaultInputModule inputModule) {
     // raw issues = all the issues created by rule engines during this module scan and not excluded by filters
     List<ScannerReport.Issue> rawIssues = new LinkedList<>();
-    try (CloseableIterator<ScannerReport.Issue> it = reader.readComponentIssues(component.batchId())) {
+    try (CloseableIterator<ScannerReport.Issue> it = reader.readComponentIssues(inputModule.batchId())) {
       while (it.hasNext()) {
         rawIssues.add(it.next());
       }
     } catch (Exception e) {
-      throw new IllegalStateException("Can't read issues for " + component.key(), e);
+      throw new IllegalStateException("Can't read issues for " + inputModule.key(), e);
     }
 
     List<TrackedIssue> trackedIssues;
     if (localIssueTracking != null) {
-      trackedIssues = localIssueTracking.trackIssues(component, rawIssues, analysisDate);
+      trackedIssues = localIssueTracking.trackIssues(inputModule, rawIssues, analysisDate);
     } else {
-      trackedIssues = doTransition(rawIssues, component);
+      trackedIssues = doTransition(rawIssues, inputModule);
     }
 
     for (TrackedIssue issue : trackedIssues) {
@@ -110,7 +111,7 @@ public class IssueTransition {
     }
   }
 
-  private static List<TrackedIssue> doTransition(List<ScannerReport.Issue> rawIssues, BatchComponent component) {
+  private static List<TrackedIssue> doTransition(List<ScannerReport.Issue> rawIssues, InputComponent component) {
     List<TrackedIssue> issues = new ArrayList<>(rawIssues.size());
 
     for (ScannerReport.Issue issue : rawIssues) {

@@ -50,7 +50,7 @@ import org.sonar.api.utils.MessageException;
 import org.sonar.scanner.util.ProgressReport;
 
 /**
- * Index input files into {@link InputPathCache}.
+ * Index input files into {@link InputComponentStore}.
  */
 @ScannerSide
 public class FileIndexer {

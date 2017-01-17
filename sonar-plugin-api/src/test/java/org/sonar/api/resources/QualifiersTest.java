@@ -20,9 +20,13 @@
 package org.sonar.api.resources;
 
 import org.junit.Test;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class QualifiersTest {
 
@@ -46,7 +50,10 @@ public class QualifiersTest {
 
   @Test
   public void testProject() {
-    Resource root = new Project("foo");
+    DefaultInputModule module = mock(DefaultInputModule.class);
+    InputModuleHierarchy hierarchy = mock(InputModuleHierarchy.class);
+    when(hierarchy.root()).thenReturn(module);
+    Resource root = new Project(module, hierarchy);
     assertThat(Qualifiers.isView(root, true), is(false));
     assertThat(Qualifiers.isView(root, false), is(false));
     assertThat(Qualifiers.isProject(root, true), is(true));
@@ -55,7 +62,7 @@ public class QualifiersTest {
 
   @Test
   public void testModule() {
-    Resource sub = new Project("sub").setParent(new Project("root"));
+    Resource sub = new Project(mock(DefaultInputModule.class), mock(InputModuleHierarchy.class));
     assertThat(Qualifiers.isView(sub, true), is(false));
     assertThat(Qualifiers.isView(sub, false), is(false));
     assertThat(Qualifiers.isProject(sub, true), is(true));
@@ -119,5 +126,3 @@ public class QualifiersTest {
     }
   }
 }
-
-

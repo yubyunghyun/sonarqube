@@ -28,9 +28,6 @@ import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.PathUtils;
 
-/**
- * @since 4.2
- */
 public class TestInputFileBuilder {
   private final String relativePath;
   private final String moduleKey;

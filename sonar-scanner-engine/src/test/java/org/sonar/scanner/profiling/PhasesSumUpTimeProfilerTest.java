@@ -19,11 +19,14 @@
  */
 package org.sonar.scanner.profiling;
 
-import com.google.common.collect.Maps;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +37,7 @@ import org.sonar.api.batch.Initializer;
 import org.sonar.api.batch.PostJob;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.events.DecoratorExecutionHandler;
 import org.sonar.api.batch.events.DecoratorsPhaseHandler;
 import org.sonar.api.batch.events.InitializerExecutionHandler;
@@ -46,17 +50,14 @@ import org.sonar.api.batch.events.SensorExecutionHandler;
 import org.sonar.api.batch.events.SensorExecutionHandler.SensorExecutionEvent;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler.SensorsPhaseEvent;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.resources.Project;
 import org.sonar.api.utils.System2;
 import org.sonar.scanner.bootstrap.GlobalProperties;
 import org.sonar.scanner.events.BatchStepEvent;
-import org.sonar.scanner.profiling.AbstractTimeProfiling;
-import org.sonar.scanner.profiling.Phase;
-import org.sonar.scanner.profiling.PhasesSumUpTimeProfiler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.Maps;
 
 public class PhasesSumUpTimeProfilerTest {
 
@@ -65,20 +66,21 @@ public class PhasesSumUpTimeProfilerTest {
 
   private MockedSystem clock;
   private PhasesSumUpTimeProfiler profiler;
+  private InputModuleHierarchy hierarchy;
 
   @Before
   public void prepare() throws Exception {
+    hierarchy = mock(InputModuleHierarchy.class);
     clock = new MockedSystem();
     Map<String, String> props = Maps.newHashMap();
     props.put(CoreProperties.WORKING_DIRECTORY, temp.newFolder().getAbsolutePath());
-    profiler = new PhasesSumUpTimeProfiler(clock, new GlobalProperties(props));
+    profiler = new PhasesSumUpTimeProfiler(clock, new GlobalProperties(props), hierarchy);
   }
 
   @Test
   public void testSimpleProject() throws InterruptedException {
 
     final Project project = mockProject("my:project", true);
-    when(project.getModules()).thenReturn(Collections.<Project>emptyList());
 
     fakeAnalysis(profiler, project);
 
@@ -93,7 +95,7 @@ public class PhasesSumUpTimeProfilerTest {
     final Project project = mockProject("project root", true);
     final Project moduleA = mockProject("moduleA", false);
     final Project moduleB = mockProject("moduleB", false);
-    when(project.getModules()).thenReturn(Arrays.asList(moduleA, moduleB));
+    when(hierarchy.children(project.inputModule())).thenReturn(Arrays.asList(moduleA.inputModule(), moduleB.inputModule()));
 
     fakeAnalysis(profiler, moduleA);
     fakeAnalysis(profiler, moduleB);
@@ -140,9 +142,9 @@ public class PhasesSumUpTimeProfilerTest {
   }
 
   private Project mockProject(String name, boolean isRoot) {
-    final Project project = spy(new Project("myProject"));
-    when(project.isRoot()).thenReturn(isRoot);
-    when(project.getName()).thenReturn(name);
+    DefaultInputModule module = new DefaultInputModule(ProjectDefinition.create().setName(name).setKey(name));
+    final Project project = new Project(module, hierarchy);
+    when(hierarchy.isRoot(module)).thenReturn(true);
     return project;
   }
 

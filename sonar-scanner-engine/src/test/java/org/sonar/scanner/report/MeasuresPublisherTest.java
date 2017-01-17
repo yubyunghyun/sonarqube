@@ -21,7 +21,6 @@ package org.sonar.scanner.report;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Date;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,13 +31,12 @@ import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.measure.internal.DefaultMeasure;
 import org.sonar.api.measures.CoreMetrics;
-import org.sonar.api.resources.Project;
 import org.sonar.core.util.CloseableIterator;
 import org.sonar.scanner.deprecated.test.TestPlanBuilder;
-import org.sonar.scanner.index.BatchComponentCache;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.protocol.output.ScannerReportReader;
 import org.sonar.scanner.protocol.output.ScannerReportWriter;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 import org.sonar.scanner.scan.measure.MeasureCache;
 
 import static java.util.Arrays.asList;
@@ -61,18 +59,16 @@ public class MeasuresPublisherTest {
   private MeasureCache measureCache;
   private MeasuresPublisher publisher;
 
-  private org.sonar.api.resources.Resource sampleFile;
+  private InputComponentStore componentCache;
 
   @Before
   public void prepare() {
-    Project p = new Project("foo").setAnalysisDate(new Date(1234567L));
-    BatchComponentCache resourceCache = new BatchComponentCache();
-    sampleFile = org.sonar.api.resources.File.create("src/Foo.php").setEffectiveKey(FILE_KEY);
-    resourceCache.add(p, null).setInputComponent(new DefaultInputModule("foo"));
-    resourceCache.add(sampleFile, null).setInputComponent(new TestInputFileBuilder("foo", "src/Foo.php").build());
+    componentCache = new InputComponentStore();
+    componentCache.put("foo", new DefaultInputModule("foo"));
+    componentCache.put("foo", new TestInputFileBuilder("foo", "src/Foo.php").build());
     measureCache = mock(MeasureCache.class);
     when(measureCache.byComponentKey(anyString())).thenReturn(Collections.<DefaultMeasure<?>>emptyList());
-    publisher = new MeasuresPublisher(resourceCache, measureCache, mock(TestPlanBuilder.class));
+    publisher = new MeasuresPublisher(componentCache, measureCache, mock(TestPlanBuilder.class));
   }
 
   @Test

@@ -30,17 +30,18 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Status;
+import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
-import org.sonar.api.resources.ResourceUtils;
 import org.sonar.core.issue.tracking.Input;
 import org.sonar.core.issue.tracking.Tracker;
 import org.sonar.core.issue.tracking.Tracking;
+import org.sonar.scanner.DefaultComponentTree;
 import org.sonar.scanner.analysis.DefaultAnalysisMode;
-import org.sonar.scanner.index.BatchComponent;
 import org.sonar.scanner.issue.IssueTransformer;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.repository.ProjectRepositories;
@@ -52,13 +53,15 @@ public class LocalIssueTracking {
   private final ActiveRules activeRules;
   private final ServerIssueRepository serverIssueRepository;
   private final DefaultAnalysisMode mode;
+  private final DefaultComponentTree moduleTree;
 
   private boolean hasServerAnalysis;
 
-  public LocalIssueTracking(Tracker<TrackedIssue, ServerIssueFromWs> tracker, ServerLineHashesLoader lastLineHashes,
+  public LocalIssueTracking(Tracker<TrackedIssue, ServerIssueFromWs> tracker, ServerLineHashesLoader lastLineHashes, DefaultComponentTree moduleTree,
     ActiveRules activeRules, ServerIssueRepository serverIssueRepository, ProjectRepositories projectRepositories, DefaultAnalysisMode mode) {
     this.tracker = tracker;
     this.lastLineHashes = lastLineHashes;
+    this.moduleTree = moduleTree;
     this.serverIssueRepository = serverIssueRepository;
     this.mode = mode;
     this.activeRules = activeRules;
@@ -71,19 +74,19 @@ public class LocalIssueTracking {
     }
   }
 
-  public List<TrackedIssue> trackIssues(BatchComponent component, Collection<ScannerReport.Issue> reportIssues, Date analysisDate) {
+  public List<TrackedIssue> trackIssues(InputModule inputModule, Collection<ScannerReport.Issue> reportIssues, Date analysisDate) {
     List<TrackedIssue> trackedIssues = new LinkedList<>();
     if (hasServerAnalysis) {
       // all the issues that are not closed in db before starting this module scan, including manual issues
-      Collection<ServerIssueFromWs> serverIssues = loadServerIssues(component);
+      Collection<ServerIssueFromWs> serverIssues = loadServerIssues(inputModule);
 
-      if (shouldCopyServerIssues(component)) {
+      if (shouldCopyServerIssues(inputModule)) {
         // raw issues should be empty, we just need to deal with server issues (SONAR-6931)
         copyServerIssues(serverIssues, trackedIssues);
       } else {
 
-        SourceHashHolder sourceHashHolder = loadSourceHashes(component);
-        Collection<TrackedIssue> rIssues = IssueTransformer.toTrackedIssue(component, reportIssues, sourceHashHolder);
+        SourceHashHolder sourceHashHolder = loadSourceHashes(inputModule);
+        Collection<TrackedIssue> rIssues = IssueTransformer.toTrackedIssue(inputModule, reportIssues, sourceHashHolder);
 
         Input<ServerIssueFromWs> baseIssues = createBaseInput(serverIssues, sourceHashHolder);
         Input<TrackedIssue> rawIssues = createRawInput(rIssues, sourceHashHolder);
@@ -96,7 +99,7 @@ public class LocalIssueTracking {
       }
     }
 
-    if (hasServerAnalysis && ResourceUtils.isRootProject(component.resource())) {
+    if (hasServerAnalysis && moduleTree.root().equals(inputModule)) {
       // issues that relate to deleted components
       addIssuesOnDeletedComponents(trackedIssues);
     }
@@ -127,9 +130,9 @@ public class LocalIssueTracking {
     return new IssueTrackingInput<>(rIssues, baseHashes);
   }
 
-  private boolean shouldCopyServerIssues(BatchComponent component) {
+  private boolean shouldCopyServerIssues(InputComponent component) {
     if (!mode.scanAllFiles() && component.isFile()) {
-      InputFile inputFile = (InputFile) component.inputComponent();
+      InputFile inputFile = (InputFile) component;
       if (inputFile.status() == Status.SAME) {
         return true;
       }
@@ -155,19 +158,16 @@ public class LocalIssueTracking {
   }
 
   @CheckForNull
-  private SourceHashHolder loadSourceHashes(BatchComponent component) {
+  private SourceHashHolder loadSourceHashes(InputComponent component) {
     SourceHashHolder sourceHashHolder = null;
     if (component.isFile()) {
-      DefaultInputFile file = (DefaultInputFile) component.inputComponent();
-      if (file == null) {
-        throw new IllegalStateException("Resource " + component.resource() + " was not found in InputPath cache");
-      }
+      DefaultInputFile file = (DefaultInputFile) component;
       sourceHashHolder = new SourceHashHolder(file, lastLineHashes);
     }
     return sourceHashHolder;
   }
 
-  private Collection<ServerIssueFromWs> loadServerIssues(BatchComponent component) {
+  private Collection<ServerIssueFromWs> loadServerIssues(InputComponent component) {
     Collection<ServerIssueFromWs> serverIssues = new ArrayList<>();
     for (org.sonar.scanner.protocol.input.ScannerInput.ServerIssue previousIssue : serverIssueRepository.byComponent(component)) {
       serverIssues.add(new ServerIssueFromWs(previousIssue));

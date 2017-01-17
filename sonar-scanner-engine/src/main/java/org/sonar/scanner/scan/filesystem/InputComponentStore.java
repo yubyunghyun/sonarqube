@@ -19,30 +19,57 @@
  */
 package org.sonar.scanner.scan.filesystem;
 
-import com.google.common.collect.Table;
-import com.google.common.collect.TreeBasedTable;
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.fs.InputDir;
-import org.sonar.api.batch.fs.InputFile;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.CheckForNull;
+
+import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.InputDir;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputModule;
+
+import com.google.common.collect.Table;
+import com.google.common.collect.TreeBasedTable;
 
 /**
  * Cache of all files and dirs. This cache is shared amongst all project modules. Inclusion and
  * exclusion patterns are already applied.
  */
 @ScannerSide
-public class InputPathCache {
+public class InputComponentStore {
 
   private final Table<String, String, InputFile> inputFileCache = TreeBasedTable.create();
   private final Table<String, String, InputDir> inputDirCache = TreeBasedTable.create();
+  private final Map<String, InputModule> inputModuleCache = new HashMap<>();
+  private final Map<String, InputComponent> inputComponents = new HashMap<>();
+  private InputModule root;
 
+  public Collection<InputComponent> all() {
+    return inputComponents.values();
+  }
+  
   public Iterable<InputFile> allFiles() {
     return inputFileCache.values();
   }
 
   public Iterable<InputDir> allDirs() {
     return inputDirCache.values();
+  }
+
+  public InputComponent getByKey(String key) {
+    return inputComponents.get(key);
+  }
+  
+  public void setRoot(InputModule root) {
+    this.root = root;
+  }
+  
+  @CheckForNull
+  public InputModule root() {
+    return root;
   }
 
   public Iterable<InputFile> filesByModule(String moduleKey) {
@@ -53,29 +80,31 @@ public class InputPathCache {
     return inputDirCache.row(moduleKey).values();
   }
 
-  public InputPathCache removeModule(String moduleKey) {
+  public InputComponentStore removeModule(String moduleKey) {
     inputFileCache.row(moduleKey).clear();
     inputDirCache.row(moduleKey).clear();
     return this;
   }
 
-  public InputPathCache remove(String moduleKey, InputFile inputFile) {
+  public InputComponentStore remove(String moduleKey, InputFile inputFile) {
     inputFileCache.remove(moduleKey, inputFile.relativePath());
     return this;
   }
 
-  public InputPathCache remove(String moduleKey, InputDir inputDir) {
+  public InputComponentStore remove(String moduleKey, InputDir inputDir) {
     inputDirCache.remove(moduleKey, inputDir.relativePath());
     return this;
   }
 
-  public InputPathCache put(String moduleKey, InputFile inputFile) {
+  public InputComponentStore put(String moduleKey, InputFile inputFile) {
     inputFileCache.put(moduleKey, inputFile.relativePath(), inputFile);
+    inputComponents.put(inputFile.key(), inputFile);
     return this;
   }
 
-  public InputPathCache put(String moduleKey, InputDir inputDir) {
+  public InputComponentStore put(String moduleKey, InputDir inputDir) {
     inputDirCache.put(moduleKey, inputDir.relativePath(), inputDir);
+    inputComponents.put(inputDir.key(), inputDir);
     return this;
   }
 
@@ -87,6 +116,16 @@ public class InputPathCache {
   @CheckForNull
   public InputDir getDir(String moduleKey, String relativePath) {
     return inputDirCache.get(moduleKey, relativePath);
+  }
+
+  @CheckForNull
+  public InputModule getModule(String moduleKey) {
+    return inputModuleCache.get(moduleKey);
+  }
+
+  public void put(String moduleKey, InputModule inputModule) {
+    inputComponents.put(inputModule.key(), inputModule);
+    inputModuleCache.put(moduleKey, inputModule);
   }
 
 }

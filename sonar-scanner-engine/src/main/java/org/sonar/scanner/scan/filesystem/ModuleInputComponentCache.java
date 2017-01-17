@@ -23,15 +23,16 @@ import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 
 @ScannerSide
-public class ModuleInputFileCache extends DefaultFileSystem.Cache {
+public class ModuleInputComponentCache extends DefaultFileSystem.Cache {
 
   private final String moduleKey;
-  private final InputPathCache inputPathCache;
+  private final InputComponentStore inputPathCache;
 
-  public ModuleInputFileCache(ProjectDefinition projectDef, InputPathCache projectCache) {
+  public ModuleInputComponentCache(ProjectDefinition projectDef, InputComponentStore projectCache) {
     this.moduleKey = projectDef.getKeyWithBranch();
     this.inputPathCache = projectCache;
   }
@@ -59,5 +60,15 @@ public class ModuleInputFileCache extends DefaultFileSystem.Cache {
   @Override
   protected void doAdd(InputDir inputDir) {
     inputPathCache.put(moduleKey, inputDir);
+  }
+  
+  @Override
+  protected void doAdd(InputModule inputModule) {
+    inputPathCache.put(moduleKey, inputModule);
+  }
+
+  @Override
+  public InputModule module() {
+    return inputPathCache.getModule(moduleKey);
   }
 }

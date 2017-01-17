@@ -43,6 +43,7 @@ import org.sonar.api.batch.events.PostJobsPhaseHandler;
 import org.sonar.api.batch.events.ProjectAnalysisHandler;
 import org.sonar.api.batch.events.SensorExecutionHandler;
 import org.sonar.api.batch.events.SensorsPhaseHandler;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.resources.Project;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.TimeUtils;
@@ -71,14 +72,16 @@ public class PhasesSumUpTimeProfiler implements ProjectAnalysisHandler, SensorEx
 
   private final System2 system;
   private final File out;
-  
-  public PhasesSumUpTimeProfiler(System2 system, GlobalProperties bootstrapProps) {
+  private final InputModuleHierarchy moduleHierarchy;
+
+  public PhasesSumUpTimeProfiler(System2 system, GlobalProperties bootstrapProps, InputModuleHierarchy moduleHierarchy) {
     String workingDirPath = StringUtils.defaultIfBlank(bootstrapProps.property(CoreProperties.WORKING_DIRECTORY), CoreProperties.WORKING_DIRECTORY_DEFAULT_VALUE);
     File workingDir = new File(workingDirPath).getAbsoluteFile();
     this.out = new File(workingDir, "profiling");
     this.out.mkdirs();
     this.totalProfiling = new ModuleProfiling(null, system);
     this.system = system;
+    this.moduleHierarchy = moduleHierarchy;
   }
 
   static void println(String msg) {
@@ -115,7 +118,7 @@ public class PhasesSumUpTimeProfiler implements ProjectAnalysisHandler, SensorEx
       String fileName = module.getKey() + "-profiler.properties";
       dumpToFile(props, ScannerUtils.cleanKeyForFilename(fileName));
       totalProfiling.merge(currentModuleProfiling);
-      if (module.isRoot() && !module.getModules().isEmpty()) {
+      if (moduleHierarchy.isRoot(module.inputModule()) && !moduleHierarchy.children(module.inputModule()).isEmpty()) {
         dumpTotalExecutionSummary();
       }
     }

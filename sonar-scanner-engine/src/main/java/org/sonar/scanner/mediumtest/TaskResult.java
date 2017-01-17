@@ -50,7 +50,7 @@ import org.sonar.scanner.protocol.output.ScannerReport.Symbol;
 import org.sonar.scanner.report.ReportPublisher;
 import org.sonar.scanner.report.ScannerReportUtils;
 import org.sonar.scanner.scan.ProjectScanContainer;
-import org.sonar.scanner.scan.filesystem.InputPathCache;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 import org.sonar.scanner.protocol.output.ScannerReportReader;
 
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
@@ -102,7 +102,7 @@ public class TaskResult implements org.sonar.scanner.mediumtest.ScanTaskObserver
   }
 
   private void storeFs(ProjectScanContainer container) {
-    InputPathCache inputFileCache = container.getComponentByType(InputPathCache.class);
+    InputComponentStore inputFileCache = container.getComponentByType(InputComponentStore.class);
     for (InputFile inputPath : inputFileCache.allFiles()) {
       inputFiles.put(inputPath.relativePath(), inputPath);
     }

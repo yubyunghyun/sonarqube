@@ -22,6 +22,8 @@ package org.sonar.scanner.phases;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.batch.Initializer;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.resources.Project;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -34,23 +36,26 @@ public class InitializersExecutor {
 
   private static final Logger LOG = Loggers.get(SensorsExecutor.class);
 
-  private Project project;
-  private ScannerExtensionDictionnary selector;
-  private EventBus eventBus;
+  private final DefaultInputModule module;
+  private final ScannerExtensionDictionnary selector;
+  private final EventBus eventBus;
+  private final InputModuleHierarchy moduleHierarchy;
 
-  public InitializersExecutor(ScannerExtensionDictionnary selector, Project project, EventBus eventBus) {
+  public InitializersExecutor(InputModuleHierarchy moduleHierarchy, ScannerExtensionDictionnary selector, DefaultInputModule module, EventBus eventBus) {
+    this.moduleHierarchy = moduleHierarchy;
     this.selector = selector;
-    this.project = project;
+    this.module = module;
     this.eventBus = eventBus;
   }
 
   public void execute() {
-    Collection<Initializer> initializers = selector.select(Initializer.class, project, true, null);
+    Collection<Initializer> initializers = selector.select(Initializer.class, module, true, null);
     eventBus.fireEvent(new InitializersPhaseEvent(Lists.newArrayList(initializers), true));
     if (LOG.isDebugEnabled()) {
       LOG.debug("Initializers : {}", StringUtils.join(initializers, " -> "));
     }
 
+    Project project = new Project(module, moduleHierarchy);
     for (Initializer initializer : initializers) {
       eventBus.fireEvent(new InitializerExecutionEvent(initializer, true));
 

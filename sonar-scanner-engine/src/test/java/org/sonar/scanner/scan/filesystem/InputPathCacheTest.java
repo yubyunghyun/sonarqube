@@ -29,7 +29,7 @@ import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
-import org.sonar.scanner.scan.filesystem.InputPathCache;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +49,7 @@ public class InputPathCacheTest {
 
   @Test
   public void should_add_input_file() throws Exception {
-    InputPathCache cache = new InputPathCache();
+    InputComponentStore cache = new InputComponentStore();
     DefaultInputFile fooFile = new TestInputFileBuilder("foo", "src/main/java/Foo.java").setModuleBaseDir(temp.newFolder().toPath()).build();
     cache.put("struts", fooFile);
     cache.put("struts-core", new TestInputFileBuilder("foo", "src/main/java/Bar.java")

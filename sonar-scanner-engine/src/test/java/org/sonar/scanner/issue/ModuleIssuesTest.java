@@ -19,7 +19,6 @@
  */
 package org.sonar.scanner.issue;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -31,11 +30,9 @@ import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.RulesBuilder;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssue;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
-import org.sonar.api.resources.File;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.Severity;
 import org.sonar.api.utils.MessageException;
-import org.sonar.scanner.index.BatchComponentCache;
 import org.sonar.scanner.issue.IssueFilters;
 import org.sonar.scanner.issue.ModuleIssues;
 import org.sonar.scanner.protocol.output.ScannerReport;
@@ -66,14 +63,8 @@ public class ModuleIssuesTest {
 
   ModuleIssues moduleIssues;
 
-  BatchComponentCache componentCache = new BatchComponentCache();
   InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").initMetadata("Foo\nBar\nBiz\n").build();
   ReportPublisher reportPublisher = mock(ReportPublisher.class, RETURNS_DEEP_STUBS);
-
-  @Before
-  public void prepare() {
-    componentCache.add(File.create("src/Foo.php").setEffectiveKey("foo:src/Foo.php"), null).setInputComponent(file);
-  }
 
   @Test
   public void fail_on_unknown_rule() {
@@ -215,7 +206,7 @@ public class ModuleIssuesTest {
    * Every rules and active rules has to be added in builders before creating ModuleIssues
    */
   private void initModuleIssues() {
-    moduleIssues = new ModuleIssues(activeRulesBuilder.build(), ruleBuilder.build(), filters, reportPublisher, componentCache);
+    moduleIssues = new ModuleIssues(activeRulesBuilder.build(), ruleBuilder.build(), filters, reportPublisher);
   }
 
 }

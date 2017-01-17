@@ -19,6 +19,7 @@
  */
 package org.sonar.api.batch.fs.internal;
 
+import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.fs.InputModule;
 
 /**
@@ -27,9 +28,15 @@ import org.sonar.api.batch.fs.InputModule;
 public class DefaultInputModule extends DefaultInputComponent implements InputModule {
 
   private final String moduleKey;
+  private final ProjectDefinition definition;
 
   public DefaultInputModule(String moduleKey) {
-    this.moduleKey = moduleKey;
+    this(ProjectDefinition.create().setKey(moduleKey));
+  }
+
+  public DefaultInputModule(ProjectDefinition definition) {
+    this.definition = definition;
+    this.moduleKey = definition.getKey();
   }
 
   @Override
@@ -40,6 +47,10 @@ public class DefaultInputModule extends DefaultInputComponent implements InputMo
   @Override
   public boolean isFile() {
     return false;
+  }
+
+  public ProjectDefinition definition() {
+    return definition;
   }
 
 }

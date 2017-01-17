@@ -23,6 +23,8 @@ import com.google.common.collect.Lists;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.Sensor;
 import org.sonar.api.batch.SensorContext;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.resources.Project;
 import org.sonar.scanner.bootstrap.ScannerExtensionDictionnary;
 import org.sonar.scanner.events.EventBus;
@@ -30,15 +32,16 @@ import java.util.Collection;
 
 @ScannerSide
 public class SensorsExecutor {
+  private final EventBus eventBus;
+  private final DefaultInputModule module;
+  private final ScannerExtensionDictionnary selector;
+  private final InputModuleHierarchy moduleHierarchy;
 
-  private EventBus eventBus;
-  private Project module;
-  private ScannerExtensionDictionnary selector;
-
-  public SensorsExecutor(ScannerExtensionDictionnary selector, Project project, EventBus eventBus) {
+  public SensorsExecutor(InputModuleHierarchy moduleHierarchy, ScannerExtensionDictionnary selector, DefaultInputModule module, EventBus eventBus) {
+    this.moduleHierarchy = moduleHierarchy;
     this.selector = selector;
     this.eventBus = eventBus;
-    this.module = project;
+    this.module = module;
   }
 
   public void execute(SensorContext context) {
@@ -54,7 +57,7 @@ public class SensorsExecutor {
 
   private void executeSensor(SensorContext context, Sensor sensor) {
     eventBus.fireEvent(new SensorExecutionEvent(sensor, true));
-    sensor.analyse(module, context);
+    sensor.analyse(new Project(module, moduleHierarchy), context);
     eventBus.fireEvent(new SensorExecutionEvent(sensor, false));
   }
 }

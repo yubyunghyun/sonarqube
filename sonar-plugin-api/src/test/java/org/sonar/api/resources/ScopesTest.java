@@ -20,15 +20,18 @@
 package org.sonar.api.resources;
 
 import org.junit.Test;
+import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class ScopesTest {
 
   @Test
   public void testProject() {
-    Project resource = new Project("key");
+    Project resource = new Project(mock(DefaultInputModule.class), mock(InputModuleHierarchy.class));
     assertThat(Scopes.isProject(resource), is(true));
     assertThat(Scopes.isDirectory(resource), is(false));
     assertThat(Scopes.isFile(resource), is(false));

@@ -50,7 +50,7 @@ import org.sonar.scanner.issue.IssueCache;
 import org.sonar.scanner.issue.tracking.TrackedIssue;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonar.scanner.repository.user.UserRepositoryLoader;
-import org.sonar.scanner.scan.filesystem.InputPathCache;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssert.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,7 +84,7 @@ public class JSONReportTest {
     DefaultInputDir inputDir = new DefaultInputDir("struts", "src/main/java/org/apache/struts");
     DefaultInputFile inputFile = new TestInputFileBuilder("struts", "src/main/java/org/apache/struts/Action.java").build();
     inputFile.setStatus(InputFile.Status.CHANGED);
-    InputPathCache fileCache = mock(InputPathCache.class);
+    InputComponentStore fileCache = mock(InputComponentStore.class);
     when(fileCache.allFiles()).thenReturn(Arrays.<InputFile>asList(inputFile));
     when(fileCache.allDirs()).thenReturn(Arrays.<InputDir>asList(inputDir));
     Project rootModule = new Project("struts");
